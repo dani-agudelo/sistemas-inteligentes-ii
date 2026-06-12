@@ -1,0 +1,282 @@
+﻿Matriz de características
+
+
+En el ámbito del aprendizaje automático, la optimización consiste principalmente en ajustar los parámetros de un modelo para minimizar una función de coste, la cual representa el error entre las predicciones del modelo y los valores reales.
+
+
+Para lograr esto mediante derivadas, se siguen estos principios fundamentales:
+
+
+El papel de la derivada en la optimización
+• Búsqueda del mínimo: Analíticamente, para minimizar una función, se puede intentar igualar su derivada a cero. Esto permite identificar los puntos donde la pendiente es nula, que podrían ser mínimos o máximos.
+
+
+• Información de la pendiente: La derivada indica el valor de la pendiente en un punto determinado de la función. En modelos complejos donde no se puede encontrar el mínimo de forma analítica simple, se utilizan métodos iterativos que aprovechan esta información.
+
+
+El método del Descenso del Gradiente (Gradient Descent)
+Es el algoritmo más común para optimizar modelos y se basa directamente en el cálculo de derivadas.
+1. Cálculo del Gradiente: El gradiente (∇f) es una generalización de la derivada para funciones de más de una variable. Consiste en el conjunto ordenado de las derivadas parciales de la función en un punto dado.
+2. Dirección del movimiento: El gradiente indica la dirección de la mayor pendiente. Como el objetivo es llegar al punto mínimo (donde el coste es menor), el algoritmo avanza en la dirección opuesta al gradiente (dirección negativa).
+3. Actualización de parámetros: Los parámetros del modelo (θ) se actualizan iterativamente siguiendo la regla: θ:=θ−α∇f.
+    ◦ Ratio de aprendizaje (α): Es un factor que define cuánto se avanza en cada paso. Si es muy bajo, el proceso es ineficiente; si es muy alto, el algoritmo puede no converger al mínimo.
+
+
+Aplicación en Redes Neuronales
+En las redes neuronales artificiales (ANN), este proceso se conoce como retropropagación (backpropagation). El algoritmo calcula los gradientes de la función de pérdida con respecto a cada peso de la red, transmitiendo la información del error desde las últimas capas hacia atrás para ajustar los parámetros y reducir el valor de la función de pérdida.
+En resumen, derivando se obtiene la dirección y magnitud del cambio necesario en los parámetros para reducir el error de la manera más eficiente posible hasta alcanzar una solución óptima
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Derivada gradiente 
+Los algoritmos de aprendizaje de máquina aprenden de ejemplos
+Se llevan los objetos del mundo real al cartesiano al espacio de características, el algoritmo debe encontrar la frontera que separe mejor los datos
+
+
+Clasificadores
+* Usamos algoritmos de optimización, basados en heuristico o gradiente descendete
+* Qué hace que aprenda 
+* Cada función objetivo lleva a un clasificador diferente 
+
+
+CLASE 2: Espacio de Características y Clasificadores Lineales
+Un clasificador lineal es un algoritmo de aprendizaje automático supervisado que asigna categorías basándose en una combinación lineal de las características (variables) de los datos.
+* Aprendizaje: Alimentamos la máquina con ejemplos para que ella aprenda y decida por dónde trazar la frontera de decisión.
+* Dataset: Se representa mediante una matriz de características ($X$), donde las columnas son las características y las filas son los ejemplos.
+* Criterio de Selección: Para encontrar la mejor frontera de decisión, debemos definir qué es "lo mejor" (generalmente el máximo o el mínimo), lo cual se convierte en un problema de optimización matemática.
+Optimización Matemática
+Consiste en derivar una función e igualarla a cero para encontrar sus puntos críticos.
+El Gradiente Descendente
+Es un algoritmo para optimizar funciones cuando no se pueden resolver directamente con derivadas simples.
+* Definición de Gradiente: Es un vector que apunta en la dirección de máxima variación.
+* Concepto de Derivada: Es la tasa de cambio en un punto específico donde pasa una recta tangente. En el mínimo de una función, la tangente es horizontal (pendiente 0).
+* Fórmula de actualización: xnuevo=x−α∇
+* Tasa de Aprendizaje (α): Es un parámetro crítico.
+   * Alta: Menos estabilidad y riesgo de no alcanzar la convergencia.
+   * Baja: Entrenamiento más lento pero más estable.
+* Tolerancia (tolerance): Define el umbral de cambio para detener el algoritmo ("qué tan pequeño debe ser el cambio para decir 'ya llegué'").
+   * Mucha tolerancia: Menos precisión.
+   * Poca tolerancia: Solución más exacta.
+________________
+
+
+CLASE 3: Métodos Básicos de Aprendizaje Máquina
+La optimización es fundamental ya que cada modelo utiliza una función objetivo que se debe maximizar o minimizar.
+Función Discriminante Lineal
+Es la generalización de la ecuación de la recta en n dimensiones para separar clases en un espacio de características.
+* Representación como sumatoria:
+         
+* Representación matricial: 
+  
+
+* Relación geométrica (Producto punto): 
+  
+
+
+
+Clasificador por Mínimos Cuadrados
+Se busca encontrar el vector de pesos $w$ óptimo minimizando el error entre las predicciones y las etiquetas reales.
+1. Función Objetivo (Error Cuadrático Medio - MSE):
+  
+
+2. Optimización del error: Para hallar el $w$ óptimo, derivamos el error respecto a w e igualamos a cero: 
+  
+
+3. Solución matricial (Ecuación Normal): Despejando el vector de pesos w: 
+  
+
+Regularización (Tikhonov)
+Para solucionar problemas de inestabilidad numérica al calcular la inversa de las matrices (cuando X^T X es singular o mal condicionada), se añade un término de regularización: 
+  
+
+* α: Factor de regularización.
+* I: Matriz identidad
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Clase 4
+Si la frontera es recta (plano, recta, hiperplano), se le llama discriminante. Otro enfoque es tratar de remodelar los datos en sí mismos
+La teoría de probabilidades es el lenguaje que permite a los sistemas de Inteligencia Artificial (IA) manejar la incertidumbre y aprender patrones cuando las relaciones en los datos no son exactas
+En un modelo general de aprendizaje, se asume que existe un Generador que produce datos siguiendo una función de probabilidad fija pero desconocida, y un Supervisor que entrega respuestas basadas en una probabilidad condicional también desconocida
+
+
+1. El Teorema de Bayes en la IA
+El Teorema de Bayes es la base de clasificadores probabilísticos como el Naive Bayes, que se utiliza comúnmente para la clasificación de texto
+Este algoritmo estima la probabilidad de que una entrada pertenezca a una clase específica basándose en las características observadas
+El problema de las puertas de Marilyn vos Savant (el problema de Monty Hall) es un ejemplo clásico de probabilidad condicional que demuestra cómo la información nueva (abrir una puerta) cambia las probabilidades de éxito, un concepto que la IA utiliza para actualizar sus predicciones conforme recibe más datos.
+2. Localidad Espacial y Vecino más Cercano
+La suposición de localidad espacial indica que, en un espacio de características, los puntos que están más cerca entre sí suelen tener respuestas o clases similares
+
+
+Vecino más Cercano (1-NN): Es un algoritmo que asigna a un punto nuevo la categoría de su vecino más próximo en el espacio de características
+k-Vecinos más Cercanos (k-NN): Generaliza esta regla buscando los k puntos más cercanos
+es una buena práctica que k no sea un múltiplo del número de clases para evitar empates en la votación de la categoría.
+Regla de Voronoi (Bolonoy): Aunque no se esta regla geométrica particiona el espacio de modo que cada celda contiene todos los puntos más cercanos a un "sitio" específico, formando la frontera de decisión del clasificador de vecino más cercano.
+3. Capacidad de Generalización y Validación
+La generalización es la capacidad de un clasificador para dar respuestas correctas ante datos distintos a los de entrenamiento
+Para medirla y evitar el sobreajuste (overfitting), se utilizan diversas técnicas
+Validación Cruzada (Cross-validation): Consiste en dividir los datos en varios subconjuntos para entrenar y probar el modelo repetidamente, asegurando que los parámetros sean robustos
+Técnicas de muestreo (Bootstrapping y Jackknife): El bootstrapping usa muestreo con reemplazo para crear múltiples conjuntos de entrenamiento, mientras que el jackknife (mencionado en tu consulta pero no detallado en las fuentes) consiste en dejar un solo dato fuera en cada iteración para evaluar la variabilidad del modelo.
+4. Confiabilidad y Precisión
+La confiabilidad de una medida en IA se analiza mediante estadísticas:
+Desviación Estándar: Si la desviación es baja (cercana a cero), el resultado del clasificador es consistente y confiable.
+Promedio Alto: Indica que el clasificador es preciso en sus predicciones globales.
+Repetibilidad: Un modelo es estable si, al repetir el proceso de entrenamiento con datos similares, produce resultados consistentes.
+5. Métricas de Evaluación
+Para evaluar qué tan bien clasifica un sistema, se utilizan métricas de sensibilidad y especificidad
+Sensibilidad: Mide la capacidad del modelo para detectar casos positivos (muy importante en medicina para no pasar por alto una enfermedad).
+Especificidad: Mide la capacidad para clasificar correctamente los casos negativos.
+Falso Negativo: Ocurre cuando el sistema predice que NO hay una condición (clase negativa) cuando en realidad la respuesta es SÍ (clase positiva). Minimizar los falsos negativos es crítico en diagnósticos médicos
+
+
+Clase 5
+
+
+Funcion de error Perceptrón
+cuando un clasificador binario tiene error de 50%, es el PEOR ERROR QUE PUEDE COMETER
+  
+
+SI FUERA Error del 100%, simplemente se invierte, pero 50% 
+cuando una muestra esta por encima, es positiva
+
+
+si esta ´pr denamjo de la frontera, da negativo
+
+
+y4= -1
+pero vemos que está por encima, es positiva
+
+
+
+
+Se le pone el - para que las bien etiquetadas disminuyan el error
+  
+
+Solo suma las muestras mal clasificadas
+N: muestras mal clasificadas
+
+
+Definimos una funcion de error, luego se minimiza, pero el perceptron no se puede minimizar con el metodo analitico
+
+
+Esa función no es derivable, cambia su dominio en cada iteración
+podemos obtener una aproximación con el gradiente descendiente
+
+
+
+  
+
+
+
+Si el problema es lineal/ separable, podemos poner tolerancia cero, iteramos hasta que el error sea cero, cuando no quede muestra mal, W deja de actualizarse y desaparece la sumatoria
+
+
+Si los datos no son lineal/ separables, toca poner una tolerancia mayor a cero
+
+
+Red neuronal:
+es un arreglo de muchos perceptrones
+  
+
+El Perceptrón es uno de los algoritmos más antiguos y fundamentales del aprendizaje automático supervisado, introducido por Frank Rosenblatt en 1957. Se define como un clasificador lineal binario, diseñado para decidir si una entrada pertenece o no a una clase específica basándose en una combinación lineal de sus características.
+A continuación, te explico sus componentes y funcionamiento detalladamente:
+1. Fundamentos Matemáticos y Estructura
+El perceptrón es la representación matemática más simple de una neurona biológica. Su estructura consta de:
+* Entradas (x): Sensores que recogen información del entorno.
+* Pesos (w): Valores que ponderan la importancia de cada entrada.
+* Sesgo (bias) o Umbral (b,θ,u): Un término constante que representa el grado de inhibición de la neurona y determina el nivel mínimo de actividad necesario para activarse.
+* Función de Activación: Generalmente una función de signo o escalón.
+La operación básica consiste en calcular la suma ponderada de las entradas y aplicar la función de activación:
+f(x)=sign(wTx+b)
+Si el resultado es mayor o igual a cero, la neurona se activa (clase +1); de lo contrario, permanece inactiva (clase -1 o 0).
+2. El Algoritmo de Aprendizaje
+El aprendizaje en un perceptrón es un proceso iterativo de corrección de errores. Consiste en los siguientes pasos:
+1. Inicialización: Se asignan pesos aleatorios al vector w.
+2. Predicción: Se clasifica una observación con los pesos actuales.
+3. Cálculo del Error: El error es la diferencia entre el valor esperado (z) y el resultado obtenido (y).
+4. Actualización de Pesos: Si hay una clasificación incorrecta, los pesos se modifican intentando acercar o alejar los vectores de peso y entrada según corresponda. La fórmula de actualización es:
+5. w=w+η(z−y)x
+6. Donde η es la tasa de aprendizaje (learning rate), que amortigua el cambio en los pesos.
+3. Propiedades y el Teorema de Convergencia
+* Linealmente Separable: El perceptrón solo puede resolver problemas donde las clases pueden separarse mediante un hiperplano (una línea en 2D o un plano en 3D).
+* Convergencia: Rosenblatt demostró el Teorema de Convergencia, que asegura que si los datos son linealmente separables, el algoritmo encontrará una solución en un número finito de iteraciones.
+4. Limitaciones Históricas
+A pesar de su éxito inicial (como en la máquina MARK I para reconocimiento de imágenes), el perceptrón tiene debilidades críticas:
+* Problemas No Lineales: No puede clasificar datos que no sean linealmente separables.
+* El Problema XOR: En 1969, Minsky y Papert demostraron matemáticamente que un solo perceptrón no puede resolver la función lógica XOR (OR exclusivo), lo que detuvo gran parte de la investigación en el área durante años.
+5. Evolución: Perceptrón Multicapa (MLP)
+Para superar estas limitaciones, se desarrollaron los Perceptrones Multicapa, que añaden capas ocultas entre la entrada y la salida. Estas redes utilizan funciones de activación no lineales (como la sigmoide o ReLU) y el algoritmo de Backpropagation (retropropagación) para aprender representaciones abstractas y resolver problemas complejos que no son linealmente separables
+
+
+Máquinas vectores de soporte
+El mejor clasificador lineal que existe:
+
+
+
+El Perceptrón y las Máquinas de Vectores de Soporte (SVM) son dos de los algoritmos más fundamentales en el aprendizaje automático supervisado para la clasificación de datos. Ambos buscan trazar un hiperplano que separe diferentes clases, pero difieren significativamente en cómo encuentran esa frontera y cómo manejan la complejidad de los datos.
+Aquí tienes una explicación detallada de ambos conceptos basada en tus fuentes:
+1. El Perceptrón: El modelo más simple
+Desarrollado por Frank Rosenblatt en la década de 1950, es la representación matemática más sencilla de una neurona biológica.
+Funcionamiento: Procesa un vector de entradas (x), multiplica cada una por un peso (w), suma un término de sesgo o umbral (b o u) y aplica una función de activación (usualmente de tipo escalón o signo) para emitir una salida binaria.
+Aprendizaje: Utiliza una regla basada en la corrección del error. Si el modelo clasifica mal un ejemplo, ajusta los pesos acercando o alejando el vector de pesos al vector de entrada según sea necesario.
+Limitaciones críticas: El perceptrón simple solo garantiza convergencia si los datos son linealmente separables. Un problema histórico famoso es su incapacidad para resolver la función lógica XOR, ya que no existe una línea recta que pueda separar sus respuestas.
+2. Máquinas de Vectores de Soporte (SVM)
+Las SVM, desarrolladas por Vapnik y su equipo en los años 90, son consideradas una evolución más robusta de los clasificadores lineales.
+El Principio del Margen Máximo: A diferencia del perceptrón, que se detiene al encontrar cualquier línea que separe las clases, la SVM busca el hiperplano óptimo. Este es el que maximiza la distancia (margen) entre los puntos más cercanos de cada clase.
+Vectores de Soporte: Son los ejemplos de entrenamiento que se encuentran justo en la frontera de los márgenes. La posición del hiperplano depende exclusivamente de estos puntos; los demás datos son irrelevantes para definir la frontera.
+Margen Duro vs. Blando:
+Margen Duro (Hard Margin): No permite errores en el entrenamiento; solo funciona si los datos son perfectamente separables.
+Margen Blando (Soft Margin): Introduce variables de holgura (ξ) y un parámetro de regularización C para permitir algunos errores de clasificación, evitando el sobreajuste (overfitting) y permitiendo trabajar con datos con ruido.
+3. El "Truco del Kernel" (Kernel Trick)
+Es la técnica que permite a las SVM resolver problemas no lineales sin aumentar drásticamente el costo computacional.
+Mapeo a dimensiones superiores: Si los datos no pueden separarse con una línea en su espacio original, el kernel los proyecta matemáticamente a un espacio de mayor dimensionalidad donde sí sea posible trazar un hiperplano separador.
+Tipos de Kernel comunes: Los más utilizados incluyen el lineal, el polinómico, el de función de base radial (RBF) y el sigmoide.
+4. Regresión con Vectores de Soporte (SVR)
+Aunque nacieron para clasificar, las SVM pueden adaptarse para predecir valores continuos mediante la SVR. En este caso, el objetivo no es separar clases, sino encontrar una función que pase lo más cerca posible de todos los puntos dentro de un margen de tolerancia ϵ (epsilon), donde los errores dentro de esa banda no son penalizados.
+
+
+
+
+
+
+Demostración
+  
+
+st
+wTxiyi >= 1 para todo i
+
+
+Para cualquier muestra tiene que ser positivo
+
+
+
+
+El numero de multiplicadores de lagrange es igual al numerod e muestras
+un kernel es una función que permite calcular u nproducto ponto en un espacio de dimesnion superior sin calcular el mapeo
+
+
+Mapeo Kernel cuando son muy rebeldes
