@@ -35,14 +35,19 @@ características congelado, a costa de mayor tiempo de entrenamiento y mayor rie
 - **Número de clases:** `[NUM_CLASSES]` (tomate sano + enfermedades: `[listar clases]`).
 - **Total de imágenes utilizadas:** `[...]` (submuestreo de `[MAX_PER_CLASS]` por clase).
 - **Tamaño de entrada:** `160 × 160 × 3`.
-- **Particiones (estratificadas):**
+- **Esquema de validación — validación cruzada estratificada (`StratifiedKFold`):**
+  en lugar de un único reparto fijo, el experimento se repite en `[N_SPLITS]` folds. En cada fold,
+  el fold reservado actúa como **conjunto de prueba** y el resto se usa para entrenar; de ese resto
+  se aparta un **15 %** como validación interna para *EarlyStopping*. Las métricas finales se
+  reportan como **media ± desviación estándar** entre folds.
 
-| Partición | N.º de imágenes | Proporción |
-|---|---|---|
-| Entrenamiento | `[...]` | 70 % |
-| Validación | `[...]` | 15 % |
-| Prueba | `[...]` | 15 % |
+| Esquema | Folds (`N_SPLITS`) | Prueba por fold | Validación interna | Estratificada |
+|---|---|---|---|---|
+| K-Fold CV | `[N_SPLITS]` | ~`[100/N_SPLITS] %` | 15 % del entrenamiento | Sí |
 
+- **Motivación:** un único split fijo puede dar una diferencia A vs. B que dependa del azar del
+  reparto. La validación cruzada reduce ese sesgo y permite cuantificar la **estabilidad** de cada
+  configuración mediante la desviación estándar.
 - **Preprocesamiento:** redimensionado a 160×160 y normalización con `preprocess_input` de
   MobileNetV2 (rango [-1, 1]).
 - **Aumento de datos:** `RandomFlip`, `RandomRotation(0.1)`, `RandomZoom(0.1)` (solo en
@@ -67,9 +72,13 @@ características congelado, a costa de mayor tiempo de entrenamiento y mayor rie
 | Épocas (fine-tuning) | `[EPOCHS_FT]` |
 | Capa de descongelamiento (`fine_tune_at`) | `[120]` |
 | Semilla aleatoria | 42 |
+| N.º de folds (`N_SPLITS`) | `[N_SPLITS]` |
 
 - **Hardware:** `[CPU/GPU detectada]`.
-- **Reproducibilidad:** semilla fija en `random`, `numpy` y `tensorflow`.
+- **Reproducibilidad:** semilla fija en `random`, `numpy` y `tensorflow`; los folds de la
+  validación cruzada se generan con `StratifiedKFold(shuffle=True, random_state=42)`.
+- **Evaluación:** en cada fold se entrenan **ambas** configuraciones sobre las mismas particiones
+  (comparación justa) y se promedian las métricas de los `[N_SPLITS]` folds.
 
 ### 3.1 Configuraciones comparadas
 
@@ -87,24 +96,40 @@ una mejora real.
 
 ## 4. Resultados
 
-### 4.1 Métricas en el conjunto de prueba
+### 4.1 Métricas agregadas (validación cruzada, media ± desviación estándar)
+
+Promedio de los `[N_SPLITS]` folds. La desviación estándar refleja la estabilidad de cada
+configuración frente al azar del reparto e inicialización.
 
 | Configuración | Accuracy | Precision | Recall | F1 (macro) | Tiempo (s) | Params entrenables |
 |---|---|---|---|---|---|---|
-| A — Congelado | `[...]` | `[...]` | `[...]` | `[...]` | `[...]` | `[...]` |
-| B — Fine-tuning | `[...]` | `[...]` | `[...]` | `[...]` | `[...]` | `[...]` |
+| A — Congelado | `[... ± ...]` | `[... ± ...]` | `[... ± ...]` | `[... ± ...]` | `[... ± ...]` | `[...]` |
+| B — Fine-tuning | `[... ± ...]` | `[... ± ...]` | `[... ± ...]` | `[... ± ...]` | `[... ± ...]` | `[...]` |
 
-### 4.2 Curvas de aprendizaje
-_(Insertar figura: Loss/Accuracy por época de Config A y Config B.)_
-**Figura 1.** Curvas de aprendizaje. `[descripción breve]`
+### 4.2 Detalle por fold
 
-### 4.3 Matrices de confusión
-_(Insertar figuras de las matrices de confusión de ambas configuraciones.)_
-**Figura 2.** Matrices de confusión. `[descripción breve]`
+| Fold | F1 A | F1 B | Tiempo A (s) | Tiempo B (s) |
+|---|---|---|---|---|
+| 1 | `[...]` | `[...]` | `[...]` | `[...]` |
+| 2 | `[...]` | `[...]` | `[...]` | `[...]` |
+| `[...]` | `[...]` | `[...]` | `[...]` | `[...]` |
 
-### 4.4 Ejemplos bien y mal clasificados
-_(Insertar mosaico de imágenes correctas e incorrectas.)_
-**Figura 3.** Ejemplos cualitativos. `[descripción breve]`
+### 4.3 Desempeño vs. costo
+_(Insertar figura: barras de F1 (macro) y tiempo con barras de error media ± std.)_
+**Figura 1.** F1 vs. tiempo de entrenamiento (media ± std entre folds). `[descripción breve]`
+
+### 4.4 Curvas de aprendizaje (fold representativo)
+_(Insertar figura: Loss/Accuracy por época de Config A y Config B del último fold.)_
+**Figura 2.** Curvas de aprendizaje de un fold. `[descripción breve]`
+
+### 4.5 Matrices de confusión (agregadas out-of-fold)
+_(Insertar figuras de las matrices de confusión de ambas configuraciones, construidas con las
+predicciones out-of-fold de todos los folds.)_
+**Figura 3.** Matrices de confusión agregadas. `[descripción breve]`
+
+### 4.6 Ejemplos bien y mal clasificados
+_(Insertar mosaico de imágenes correctas e incorrectas del fold representativo.)_
+**Figura 4.** Ejemplos cualitativos. `[descripción breve]`
 
 ---
 
@@ -115,6 +140,11 @@ _(Insertar mosaico de imágenes correctas e incorrectas.)_
 - **Comparación A vs. B:** la Configuración B `[mejoró / no mejoró]` el F1 en `[Δ...]` puntos. Esto
   se explica porque `[al descongelar, el modelo adaptó características específicas de hojas... / la
   línea base ya capturaba bien las características y el ajuste fino aportó poco]`.
+- **Estabilidad y significancia (validación cruzada):** la desviación estándar del F1 fue
+  `[±... (A)]` y `[±... (B)]`. Los intervalos (media ± std) de A y B `[se solapan / no se solapan]`,
+  por lo que la diferencia observada `[no es concluyente / es consistente entre folds]`. La
+  variación entre folds fue `[baja / alta]`, lo que indica que el resultado `[es estable / depende
+  bastante del reparto de datos]`.
 - **Errores frecuentes (matriz de confusión):** las clases más confundidas fueron
   `[clase X ↔ clase Y]`, probablemente por `[similitud visual de síntomas]`.
 
@@ -129,7 +159,8 @@ _(Insertar mosaico de imágenes correctas e incorrectas.)_
 - **Limitaciones:** `[dataset de laboratorio con fondo uniforme; posible caída de desempeño en
   fotos reales de campo; clases con pocas muestras; etc.]`.
 - **Mejoras futuras:** `[EfficientNet/ResNet; más data augmentation; descongelar más capas;
-  recolectar imágenes de campo; validación cruzada; balanceo de clases]`.
+  recolectar imágenes de campo; aumentar N_SPLITS o repetir con varias semillas; balanceo de
+  clases]`.
 
 ---
 
