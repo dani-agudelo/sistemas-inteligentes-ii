@@ -47,6 +47,9 @@ tensorflow_datasets/
 tfds/
 data/
 datasets/
+Plant_leaf_diseases_dataset_without_augmentation/
+Plant_leaf_diseases_dataset_without_augmentation
+*.zip
 *.tfrecord
 
 # ---------------------------------------------------------------------------

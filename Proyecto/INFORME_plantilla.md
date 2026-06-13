@@ -31,7 +31,7 @@ características congelado, a costa de mayor tiempo de entrenamiento y mayor rie
 
 ## 2. Descripción del dataset y particiones
 
-- **Dataset:** PlantVillage (`tensorflow_datasets`), subconjunto de **hojas de tomate**.
+- **Dataset:** PlantVillage (carpeta local `Plant_leaf_diseases_dataset_without_augmentation`), subconjunto de **hojas de tomate**.
 - **Número de clases:** `[NUM_CLASSES]` (tomate sano + enfermedades: `[listar clases]`).
 - **Total de imágenes utilizadas:** `[...]` (submuestreo de `[MAX_PER_CLASS]` por clase).
 - **Tamaño de entrada:** `160 × 160 × 3`.
