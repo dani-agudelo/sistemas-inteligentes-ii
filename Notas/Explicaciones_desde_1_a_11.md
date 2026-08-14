@@ -1,4 +1,4 @@
-# Explicaciones (1 - Introducción a 11 - Regresión)
+# Explicaciones (1 - Introducción a 15 - LoRA / fine-tuning)
 
 Formato usado en cada notebook:
 - **El "Por qué" conceptual** (intuición y geometría/analogía)
@@ -532,4 +532,266 @@ Aquí el notebook usa un dataset “seno + ruido”, lo que fuerza a modelos no 
 - K-NN regresión: promedia vecinos; depende de `k` y no extrapola.
 - ε-SVR: tubo ±ε, penaliza fuera del tubo con `C`, usa kernels (RBF) para no linealidad.
 - ANN regresión: activación lineal en salida + no linealidad interna (ReLU/tanh) y MSE.
+
+---
+
+## Notas/12 - Deep_Learning 1.ipynb
+
+### El "Por qué" conceptual
+
+El **aprendizaje profundo** (tercer boom de la IA, desde ~2012 con AlexNet) domina visión, voz y NLP porque las **redes profundas** aprenden representaciones jerárquicas: capas bajas detectan bordes/texturas; capas altas, patrones semánticos.
+
+Para imágenes, la herramienta central es la **CNN**: en lugar de conectar cada píxel con cada neurona, una convolución aplica el mismo filtro (kernel) en toda la imagen, capturando **campos receptivos locales** como la corteza visual. Luego, **pooling** da invariancia a pequeñas traslaciones; **Dropout** evita memorizar; y **entropía cruzada** entrena clasificadores multiclase de forma estable.
+
+### Explicación paso a paso
+
+1. **Convolución**
+   - Un kernel pequeño se desliza sobre la imagen y produce un mapa de características.
+   - Idea: detectar el mismo patrón en distintas posiciones compartiendo pesos.
+
+2. **Pooling (max / average)**
+   - Reduce resolución espacial.
+   - Importa menos la posición exacta que la presencia del patrón.
+
+3. **Dropout**
+   - Durante entrenamiento apaga aleatoriamente neuronas.
+   - Fuerza representaciones más robustas y reduce overfitting.
+
+4. **Funciones de pérdida**
+   - Clasificación binaria: entropía cruzada binaria (MLE con etiquetas 0/1).
+   - Multiclase: entropía cruzada (comparar con softmax).
+   - Entrenamiento: minimizar `H = -Σ y_i log(f(x_i, w))`.
+
+5. **Activaciones**
+   - ReLU, sigmoid, tanh, softmax.
+   - Deben ser derivables para backpropagation.
+
+6. **Ejemplo CIFAR-10 en el notebook**
+   - 60.000 imágenes 32×32, 10 clases.
+   - Arquitectura típica:
+     - `Conv2D` + ReLU (32, 32, 64, 128 filtros)
+     - `MaxPooling2D` cada dos bloques conv
+     - `Flatten` + `Dense` + softmax
+   - Data augmentation: `RandomFlip`, `RandomRotation`.
+   - Optimizador: Adam; pérdida: entropía cruzada categórica.
+
+7. **Tensores de imagen**
+   - Forma `(alto, ancho, canales)` → en batch: `(N, H, W, C)`.
+
+### El "Secreto para el parcial/examen"
+
+- CNN = convolución (patrones locales) + pooling (invariancia) + capas densas (decisión).
+- Dropout combate overfitting apagando neuronas en entrenamiento.
+- Clasificación profunda multiclase → **entropía cruzada + softmax**.
+- AlexNet (2012) + GPU popularizaron el deep learning en visión.
+- Batch Normalization (mencionada en el notebook) estabiliza entrenamiento normalizando activaciones por batch.
+
+---
+
+## Notas/13 - Transfer_learning.ipynb
+
+### El "Por qué" conceptual
+
+**Transfer Learning** reutiliza un modelo ya entrenado en un problema grande (p. ej. **ImageNet**: millones de imágenes, 1000 clases) como **punto de partida** para un dataset pequeño (CIFAR-10, hojas de tomate, etc.).
+
+La intuición:
+- Capas **inferiores** aprenden cosas universales (bordes, texturas).
+- Capas **superiores** son más específicas del dominio original.
+- En datos limitados, conviene **congelar** el backbone y entrenar solo un **head** nuevo, o hacer **fine-tuning parcial** (descongelar últimas capas con learning rate muy bajo).
+
+**MobileNetV2** es ideal para transferencia: usa bloques invertidos con **depthwise separable convolutions** (poco costo) y termina en un vector de **1280 características** tras Global Average Pooling.
+
+### Explicación paso a paso
+
+1. **Bloques fundamentales (teoría previa al código)**
+   - Convolución 1×1 (mezcla canales).
+   - Depthwise + pointwise (MobileNet).
+   - **Batch Normalization (BN)**: normaliza por batch con medias/varianzas `μ_B`, `σ_B²` y parámetros aprendibles `γ`, `β`.
+   - **Layer Normalization (LN)**: normaliza por ejemplo/canales (clave en Transformers).
+   - **Global Average Pooling (GAP)**: promedia cada mapa de características → vector compacto.
+   - Bloques residuales ResNet: `Y = F(X) + X` (evita vanishing gradient).
+
+2. **Fase 1 — Feature extractor (congelado)**
+   ```python
+   base_model = MobileNetV2(include_top=False, weights="imagenet", pooling="avg")
+   base_model.trainable = False
+   ```
+   - Se quita el clasificador ImageNet (`include_top=False`).
+   - Solo se entrenan capas densas nuevas sobre el vector de características.
+   - En el notebook del profesor: `Dense(256)` + `Dropout(0.5)` + `Dense(10, softmax)`.
+
+3. **Fase 2 — Fine-tuning parcial**
+   ```python
+   fine_tune_at = 150
+   for layer in base_model.layers[:fine_tune_at]:
+       layer.trainable = False
+   for layer in base_model.layers[fine_tune_at:]:
+       if isinstance(layer, tf.keras.layers.BatchNormalization):
+           layer.trainable = False  # congelar BN para estabilidad
+   ```
+   - Descongelar capas profundas con **LR muy bajo** (p. ej. `1e-5`).
+   - **Congelar BatchNorm** evita que las estadísticas de normalización (aprendidas en ImageNet) se corrompan con batches pequeños del nuevo dominio.
+
+4. **BatchNorm en modo inferencia (`training=False`)**
+   - Durante entrenamiento, BN usa estadísticas del **batch actual** (`μ_B`, `σ_B²`).
+   - En inferencia, usa **medias móviles** acumuladas en preentrenamiento.
+   - Si pasas el backbone con `training=True` mientras fine-tuneas con pocos datos, las BN se recalculan con batches ruidosos → **desestabiliza** pesos ImageNet.
+   - Por eso en tu `proyecto_final_vision.ipynb` aparece:
+     ```python
+     x = base_model(x, training=False)  # BatchNorm en modo inferencia
+     ```
+   - Es la práctica recomendada en Keras al usar backbones preentrenados dentro de un modelo funcional.
+
+5. **Pipeline de datos**
+   - Redimensionar (en el colab: 96×96; en tu proyecto: 160×160).
+   - `preprocess_input` de MobileNetV2 (escala a `[-1, 1]`).
+   - `tf.data`: `.shuffle()` → `.map()` → `.batch()` → `.prefetch(AUTOTUNE)`.
+
+6. **Relación con tu proyecto**
+   - **Config A**: `fine_tune_at=None` → todo el backbone congelado; solo entrena el head.
+   - **Config B**: descongelar desde capa 120 con `LR_FINETUNE = 1e-5`.
+   - Comparas si el fine-tuning mejora F1 macro y a qué costo computacional.
+
+### El "Secreto para el parcial/examen"
+
+- Transfer learning = reutilizar pesos ImageNet + adaptar head (y opcionalmente últimas capas).
+- **Congelar** = `layer.trainable = False` o `base_model.trainable = False`.
+- Fine-tuning = descongelar parcialmente + **LR bajo** + **BN estable** (`training=False` o `BatchNorm.trainable=False`).
+- MobileNetV2: eficiente, 1280-dim tras GAP, bloques invertidos.
+- Feature extractor vs fine-tuning: trade-off entre simplicidad/velocidad y adaptación al dominio.
+
+---
+
+## Notas/14 - Transformers.ipynb
+
+### El "Por qué" conceptual
+
+El lenguaje es **secuencial**: el significado de una palabra depende del contexto. Las **RNN** procesan token a token con un estado oculto `h_t` que actúa como memoria, pero sufren **vanishing gradient** en dependencias largas.
+
+Las **LSTM** añaden memoria explícita `c_t` y **puertas** (olvido, entrada, salida) para conservar información muchos pasos. Aun así, el procesamiento es secuencial y lento.
+
+Los **Transformers** (2017, *Attention is All You Need*) eliminan la recurrencia: con **self-attention**, cada token “mira” a todos los demás en paralelo. Eso permite capturar dependencias largas y escalar a modelos enormes (BERT, GPT, etc.).
+
+### Explicación paso a paso
+
+1. **Tokenización**
+   - Texto → secuencia de tokens (palabras, subpalabras o caracteres).
+   - Cada token → índice entero en un vocabulario (p. ej. 20.000 palabras en IMDB).
+   - `pad_sequences` deja reseñas de longitud fija (p. ej. 400 tokens).
+
+2. **Embedding**
+   - Convierte índices en vectores densos de dimensión `embedding_dim` (p. ej. 128).
+   - Aprende representaciones semánticas de palabras.
+
+3. **RNN simple**
+   - Actualización: `h_t = tanh(W_x x_t + W_h h_{t-1} + b)`.
+   - Salida para clasificación binaria (sentimiento IMDB): capa `Dense(1, sigmoid)`.
+   - Limitación: memoria corta; gradiente que se debilita en secuencias largas.
+
+4. **LSTM**
+   - Puerta de olvido: `f_t = σ(W_f x_t + U_f h_{t-1} + b_f)`.
+   - Puerta de entrada: `i_t = σ(...)`.
+   - Candidato: `c̃_t = tanh(...)`.
+   - Puerta de salida: `o_t = σ(...)`.
+   - Memoria: `c_t = f_t ⊙ c_{t-1} + i_t ⊙ c̃_t`.
+   - Estado oculto: `h_t = o_t ⊙ tanh(c_t)`.
+   - En código: `layers.LSTM(64, dropout=0.3, recurrent_dropout=0.3)`.
+
+5. **Self-Attention**
+   - Cada token genera consultas **Q**, claves **K** y valores **V**.
+   - `Attention(Q,K,V) = softmax(QK^T / √d) · V`.
+   - `QK^T` mide similitud entre tokens; softmax da pesos; se combinan valores.
+
+6. **Multi-Head Attention**
+   - Varias “cabezas” en paralelo capturan distintos tipos de relación (sintaxis, negación, etc.).
+
+7. **Positional Encoding**
+   - Como no hay recurrencia, hay que inyectar **orden**:
+     - `X_final = Embedding(x) + PositionalEncoding`.
+
+8. **Bloque Transformer (encoder)**
+   - PreNorm → Multi-Head Attention → residual.
+   - PreNorm → Feed-Forward Network (FFN) → residual.
+   - Layer Normalization (no BatchNorm) en cada subcapa.
+
+9. **Dataset IMDB en el notebook**
+   - Clasificación de sentimiento (positivo/negativo).
+   - Comparación RNN vs LSTM vs Transformer en capacidad y costo.
+
+### El "Secreto para el parcial/examen"
+
+- RNN: `h_t` depende de `h_{t-1}` → memoria, pero gradiente débil a largo plazo.
+- LSTM: puertas + celda `c_t` → memoria explícita y gradientes más estables.
+- Transformer: atención paralela; no necesita pasar token a token.
+- Fórmula clave: `Attention(Q,K,V) = softmax(QK^T/√d)V`.
+- NLP moderno (BERT, GPT) = Transformers + preentrenamiento + fine-tuning.
+
+---
+
+## Notas/15 - LLM fine-tuning.ipynb
+
+### El "Por qué" conceptual
+
+Los **LLM** (GPT, LLaMA, etc.) tienen miles de millones de parámetros y se preentrenan con texto masivo. Entrenarlos desde cero es inviable en hardware normal.
+
+El **fine-tuning** adapta el modelo a una tarea (p. ej. responder sobre LoRA, chat médico, código). El fine-tuning **completo** actualiza todas las matrices `W` → memoria y tiempo enormes.
+
+**LoRA** (*Low-Rank Adaptation*) congela `W` y aprende solo una corrección de **bajo rango**:
+
+\[
+W' = W + AB
+\]
+
+con `A`, `B` pequeñas. Así entrenas ~0,1% de los parámetros con efecto similar a adaptar el modelo completo.
+
+### Explicación paso a paso
+
+1. **Fine-tuning tradicional vs LoRA**
+   - Tradicional: `W' = W + ΔW` (actualizar toda la matriz).
+   - LoRA: `W' = W + AB` con `W` congelada; solo `A` y `B` son entrenables.
+
+2. **Instruction tuning (dataset del notebook)**
+   - Pares usuario/asistente en formato conversacional:
+     - `<|user|> ... <|assistant|> ...`
+   - Dataset pequeño repetido (`data * 20`) para ver el efecto rápido en clase.
+
+3. **Cuantización 4 bits (BitsAndBytes)**
+   - Carga el modelo en GPU con poca VRAM.
+   - Pesos en precisión reducida; entrenamiento eficiente con `prepare_model_for_kbit_training`.
+
+4. **Configuración LoRA (`peft`)**
+   ```python
+   lora_config = LoraConfig(
+       r=8,              # rango de las matrices A, B
+       lora_alpha=16,
+       target_modules=["q_proj", "v_proj"],  # capas del Transformer
+       lora_dropout=0.05,
+   )
+   model = get_peft_model(model, lora_config)
+   ```
+   - `r` controla capacidad de adaptación vs costo.
+   - Solo se inyectan adaptadores en proyecciones de atención (típico).
+
+5. **Entrenamiento**
+   - `SFTTrainer` (Supervised Fine-Tuning): ajusta solo parámetros LoRA.
+   - Pesos originales permanecen congelados.
+   - Resultado típico: ~0,1% parámetros entrenables (ej. 1,1M de 1,1B).
+
+6. **Evaluación antes/después**
+   - Inferencia con `pipeline` antes del fine-tuning: respuestas genéricas/incorrectas.
+   - Tras LoRA: el modelo responde correctamente sobre LoRA en el dominio del dataset.
+
+7. **Conexión con Transfer Learning (visión)**
+   - Misma idea: modelo fundacional + adaptación ligera al dominio.
+   - En visión: congelar MobileNetV2 + entrenar head.
+   - En LLM: congelar `W` + entrenar matrices LoRA `A`, `B`.
+
+### El "Secreto para el parcial/examen"
+
+- Fine-tuning = adaptar modelo preentrenado a tarea específica (no entrenar desde cero).
+- LoRA: `W' = W + AB`, `W` congelada, bajo rango `r`.
+- Ventajas LoRA: menos memoria, menos parámetros entrenables, más rápido.
+- `r` y `lora_alpha` controlan intensidad de la adaptación.
+- Instruction tuning = ejemplos pregunta-respuesta para alinear comportamiento del chat.
+- Cuantización 4-bit permite fine-tuning de LLM en GPU modesta.
 
